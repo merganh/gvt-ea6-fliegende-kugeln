@@ -1,0 +1,721 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="data:,">
+<title>EA 6: Objekte bewegen, fliegende Kugeln</title>
+
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #ffffff;
+    --soft: #f5f5f5;
+    --primary: #1a1a1a;
+    --primary-dark: #000000;
+    --primary-light: #ededed;
+    --accent: #2a2a2a;
+    --success: #2e7d32;
+    --success-bg: #e8f5e9;
+    --error: #c62828;
+    --error-bg: #ffebee;
+    --warn: #ef6c00;
+    --warn-bg: #fff3e0;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --border: #d4d4d4;
+    --border-strong: #1a1a1a;
+    --shadow: 0 1px 2px rgba(0,0,0,.05);
+    --shadow-lg: 0 2px 6px rgba(0,0,0,.06);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+
+  header {
+    background: #1a1a1a;
+    color: #fff;
+    padding: 2.5rem 1.5rem 2rem;
+    border-bottom: 1px solid #000;
+  }
+  header .wrap { max-width: 1080px; margin: 0 auto; }
+  header h1 { margin: 0 0 .35rem; font-size: 1.85rem; font-weight: 600; }
+  header p { margin: 0; opacity: .92; font-size: 1rem; }
+  header .meta {
+    margin-top: 1rem; font-size: .85rem; opacity: .75;
+    display: flex; flex-wrap: wrap; gap: .25rem 1rem;
+  }
+
+  main { max-width: 1080px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  section { margin-bottom: 3rem; }
+
+  h2 {
+    font-size: 1.35rem; margin: 0 0 1rem;
+    padding-bottom: .5rem; border-bottom: 1px solid var(--border);
+  }
+  h2 .num {
+    display: inline-block; background: #1a1a1a; color: #fff;
+    border-radius: 2px; padding: .15rem .55rem; margin-right: .55rem;
+    font-size: .85rem; vertical-align: middle; letter-spacing: .03em;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid #1a1a1a;
+    border-radius: 4px;
+    box-shadow: var(--shadow);
+    padding: 1rem 1.1rem 1.1rem;
+    margin-bottom: 1.25rem;
+  }
+  .card h4 { margin: 0 0 .35rem; font-size: .95rem; font-weight: 600; }
+  .card .sub { font-size: .82rem; color: var(--text-muted); margin: 0 0 .65rem; }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+  .btn {
+    display: inline-block; padding: .5rem 1rem;
+    background: #1a1a1a; color: #fff;
+    border: 1px solid #1a1a1a; border-radius: 2px;
+    font-size: .9rem; font-weight: 500; cursor: pointer;
+    transition: background .15s, color .15s;
+    font-family: inherit;
+  }
+  .btn:hover, .btn.is-pressed { background: #fff; color: #1a1a1a; }
+  .btn:focus-visible { outline: 2px solid #1a1a1a; outline-offset: 2px; }
+  .btn:disabled { background: #fff; color: var(--text-muted); border-color: var(--border); cursor: not-allowed; }
+  .btn.secondary { background: #fff; color: #1a1a1a; }
+  .btn.secondary:hover, .btn.secondary.is-pressed { background: #1a1a1a; color: #fff; }
+  .btn kbd { margin-left: .35rem; }
+
+  .global-status {
+    background: var(--soft); color: var(--text);
+    border-left: 3px solid #1a1a1a;
+    padding: .65rem 1rem; border-radius: 0;
+    font-size: .9rem; margin-bottom: 1.25rem;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .global-status.is-ready { background: var(--success-bg); border-left-color: var(--success); }
+  .global-status.is-error { background: var(--error-bg); border-left-color: var(--error); color: var(--error); }
+  .global-status.is-warn  { background: var(--warn-bg);  border-left-color: var(--warn); }
+
+  .statline {
+    display: flex; flex-wrap: wrap; gap: .4rem 1.5rem; margin: 0 0 1rem;
+    font-size: .9rem; font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .statline b { font-weight: 600; }
+
+
+  .prose { max-width: 740px; }
+  .prose p { margin: 0 0 .75rem; }
+  .prose ul { padding-left: 1.4rem; margin: 0 0 1rem; }
+  .prose li { margin-bottom: .35rem; }
+  .prose a { color: #1a1a1a; text-decoration-thickness: 1px; }
+  .prose a:hover { text-decoration-thickness: 2px; }
+  .prose code { background: var(--soft); padding: 0 .3rem; border-radius: 3px; font-size: .9em; }
+
+  table.key-table { border-collapse: collapse; margin: .5rem 0 1rem; font-size: .9rem; width: 100%; }
+  table.key-table th, table.key-table td { border: 1px solid var(--border); padding: .4rem .7rem; text-align: left; }
+  table.key-table th { background: var(--soft); font-weight: 600; }
+  table.key-table td:first-child { white-space: nowrap; width: 1%; }
+
+  kbd {
+    display: inline-block; padding: .05rem .35rem; background: var(--soft);
+    border: 1px solid var(--border); border-radius: 3px; font-size: .78rem; color: var(--text);
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+
+  footer { border-top: 1px solid var(--border); padding-top: 1.5rem; font-size: .85rem; color: var(--text-muted); }
+
+  @media (max-width: 720px) {
+    header h1 { font-size: 1.5rem; }
+    main { padding: 1.5rem 1rem 3rem; }
+  }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+  /* Kontextsensitive Hilfe (ISO 9241-110) */
+  .help { position: relative; display: inline-block; margin-left: .5rem; vertical-align: middle; }
+  .help-btn {
+    width: 1.4rem; height: 1.4rem; padding: 0;
+    border: 1px solid var(--border-strong); background: #fff; color: var(--text);
+    border-radius: 50%; font-size: .8rem; font-weight: 600; cursor: help; line-height: 1;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .help-btn:hover, .help-btn:focus-visible { background: var(--text); color: #fff; outline: none; }
+  .help-popover {
+    display: none; position: absolute; top: calc(100% + .35rem); left: 50%; transform: translateX(-50%);
+    width: min(360px, 80vw); background: #fff; color: var(--text);
+    border: 1px solid var(--border-strong); border-radius: 4px;
+    padding: .7rem .85rem; font-size: .85rem; line-height: 1.45;
+    box-shadow: var(--shadow-lg); z-index: 10; text-align: left; font-weight: normal;
+  }
+  .help-popover::before {
+    content: ""; position: absolute; top: -7px; left: 50%; transform: translateX(-50%) rotate(45deg);
+    width: 12px; height: 12px; background: #fff;
+    border-left: 1px solid var(--border-strong); border-top: 1px solid var(--border-strong);
+  }
+  .help.is-open .help-popover { display: block; }
+  .help-popover h4 { margin: 0 0 .35rem; font-size: .9rem; font-weight: 600; }
+  .help-popover p { margin: 0 0 .35rem; }
+  .help-popover p:last-child { margin-bottom: 0; }
+</style>
+<style>
+  .canvas-frame {
+    background: #14171c; border: 1px solid var(--border); border-radius: 4px;
+    overflow: hidden; margin-bottom: 1rem; line-height: 0;
+  }
+  #glCanvas { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; }
+  .formula { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .88rem; background: var(--soft); border-left: 3px solid #1a1a1a; padding: .6rem .9rem; margin: 0 0 1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .prose h3 { font-size: 1rem; margin: 1.1rem 0 .4rem; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>EA 6: Objekte bewegen, fliegende Kugeln</h1>
+    <p>Vier Kugeln fliegen auf Kreisbahnen durch das Loch eines Torus über einer Gitterebene. Der Torus dreht sich dabei um eine gekippte Achse. Steuerung über die Taste k.</p>
+    <div class="meta">
+      <span>Hamid Mergan</span>
+      <span>TH Lübeck</span>
+      <span>Modul Graphical Visualisation Technologies</span>
+      <span>Wintersemester 2026/27</span>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <div id="globalStatus" class="global-status" role="status" aria-live="polite">Starte WebGL …</div>
+
+  <!-- A1 Szene -->
+  <section aria-labelledby="a1">
+    <h2 id="a1"><span class="num">A1</span>Fliegende Kugeln
+      <span class="help">
+        <button type="button" class="help-btn" aria-label="Hilfe zu A1" aria-expanded="false">?</button>
+        <span class="help-popover" role="tooltip">
+          <h4>So steuerst du die Bewegung</h4>
+          <p><kbd>k</kbd> schaltet die automatische Bewegung ein und aus. Beim Anhalten bleiben alle Objekte stehen, beim Starten läuft es an derselben Stelle weiter. Es gibt auch einen Button.</p>
+          <p>Die Kamera steht fest. Die Gitterebene hilft, die Bewegungen relativ zur Kamera einzuschätzen.</p>
+        </span>
+      </span>
+    </h2>
+
+    <div class="card">
+      <h4>Szene</h4>
+      <p class="sub">Torus und vier Kugeln wie im Beispielprogramm aus TFM, darunter eine Ebene aus Gitterlinien.</p>
+      <div class="canvas-frame">
+        <canvas id="glCanvas" width="1280" height="720" aria-label="Dreidimensionale Szene: vier farbige Kugeln fliegen durch einen weißen Torus über einer Gitterebene"></canvas>
+      </div>
+      <div class="statline" aria-label="Zustand der Animation">
+        <span><b>Bewegung:</b> <span id="infoAuto">läuft</span></span>
+        <span><b>Zeit:</b> <span id="infoTime">0.0 s</span></span>
+        <span><b>Torus-Drehwinkel:</b> <span id="infoAngle">0°</span></span>
+      </div>
+      <div class="toolbar">
+        <button id="btnAuto" class="btn" type="button" disabled><span id="btnAutoLabel">Bewegung anhalten</span><kbd>k</kbd></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- A2 Bedienung -->
+  <section aria-labelledby="a2">
+    <h2 id="a2"><span class="num">A2</span>Bedienung
+      <span class="help">
+        <button type="button" class="help-btn" aria-label="Hilfe zu A2" aria-expanded="false">?</button>
+        <span class="help-popover" role="tooltip">
+          <h4>Tastatur oder Maus</h4>
+          <p>Die Taste hat einen gleichnamigen Button. Beim Tastendruck leuchtet der Button kurz auf.</p>
+        </span>
+      </span>
+    </h2>
+    <table class="key-table">
+      <thead><tr><th>Taste</th><th>Wirkung</th></tr></thead>
+      <tbody>
+        <tr><td><kbd>k</kbd></td><td>Automatische Bewegung ein- bzw. ausschalten (Kugeln und Torus gemeinsam)</td></tr>
+      </tbody>
+    </table>
+    <div class="prose">
+      <p>Gewählt ist die Variante aus der Aufgabe, bei der die Bewegung automatisch läuft und ein- und ausgeschaltet werden kann. Gedrückthalten der Taste schaltet nicht wiederholt um. Tastenkombinationen mit Strg, Cmd oder Alt (z. B. Cmd+R zum Neuladen) werden nicht abgefangen.</p>
+      <ul>
+        <li><b>Selbstbeschreibungsfähigkeit:</b> Die Statuszeile zeigt, ob die Bewegung läuft, dazu die Zeit und den Drehwinkel des Torus. Der Button nennt seine Taste.</li>
+        <li><b>Steuerbarkeit:</b> Die Bewegung lässt sich jederzeit anhalten und wieder starten. Die Zeit läuft nur, solange die Bewegung an ist, deshalb gibt es beim Weiterlaufen keinen Sprung.</li>
+        <li><b>Fehlertoleranz:</b> Ohne WebGL oder bei einem Shader-Fehler erscheint eine Fehlermeldung in der Statuszeile und der Button wird gesperrt.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- A3 Bahnen -->
+  <section aria-labelledby="a3">
+    <h2 id="a3"><span class="num">A3</span>Bewegungskurven und Kollisionsfreiheit
+      <span class="help">
+        <button type="button" class="help-btn" aria-label="Hilfe zu A3" aria-expanded="false">?</button>
+        <span class="help-popover" role="tooltip">
+          <h4>Warum berühren sich die Kugeln nie?</h4>
+          <p>Jede Kugel kreist um einen Punkt der Röhrenmittellinie des Torus, mit einem Radius, der größer ist als Röhrenradius plus Kugelradius. Die vier Kugeln sind auf ihren Kreisen um 90° versetzt.</p>
+        </span>
+      </span>
+    </h2>
+    <div class="prose">
+      <p>Der Torus entspricht dem Torus aus GRU und TFM: Ringradius R = 0,5, Röhrenradius r = 0,3, Ringebene XY, Lochachse Z. Er ist mit dem Faktor s = 1,5 skaliert, damit Kugeln durch das Loch passen (R = 0,75, r = 0,45, Lochradius 0,30). Die Kugeln haben den Radius ρ = 0,15.</p>
+      <p>Kugel k (k = 0 bis 3) fliegt auf einem Kreis mit Radius a = 0,675. Der Kreis liegt in der Ebene, die die Lochachse und die Richtung φ<sub>k</sub> = 45° + k * 90° enthält, und sein Mittelpunkt ist der Punkt der Röhrenmittellinie in dieser Richtung. Das sind die Diagonalen wie bei den Kugeln im Beispielprogramm. Zeitabhängig (Zeit t, Umlaufzeit T = 6 s, ω = 2π / T):</p>
+      <div class="formula">θ<sub>k</sub>(t) = ω * t + k * 90°
+p = s * R + a * cos θ<sub>k</sub>
+Position im Torus-Koordinatensystem = ( p * cos φ<sub>k</sub> , p * sin φ<sub>k</sub> , a * sin θ<sub>k</sub> )</div>
+      <p><b>Kugel und Torus:</b> Der Abstand des Kugelmittelpunkts zur Röhrenmittellinie ist konstant gleich a. Der Torus ist die Fläche mit Abstand r zur Mittellinie. Der Abstand der Kugeloberfläche zur Torusfläche ist also immer a − r − ρ = 0,675 − 0,45 − 0,15 = 0,075. Die Kreise umschließen den Röhrenquerschnitt und sind mit dem Torus verkettet, deshalb führt jede Bahn durch das Loch.</p>
+      <p><b>Kugel und Kugel:</b> Alle vier Kugeln laufen mit derselben Winkelgeschwindigkeit, liegen in verschiedenen Ebenen und sind um 90° auf ihrem Kreis versetzt. Der Abstand der Mittelpunkte ist periodisch in T. Die Prüfung über 60 s (10 Umläufe der Kugeln, 4 Drehungen des Torus) in Schritten von 0,5 ms ergab:</p>
+      <ul>
+        <li>kleinster Abstand zwischen zwei Kugeloberflächen: <b id="resKK">0,709 (Mittelpunktabstand 1,009 bei Kugeldurchmesser 0,30)</b></li>
+        <li>kleinster Abstand einer Kugeloberfläche zur Torusfläche: <b id="resKT">0,075</b></li>
+      </ul>
+      <p>Die Prüfung berechnet die Abstände in Weltkoordinaten bei laufender Torusdrehung (Erweiterung). Der Torus wird dabei als Implizitfläche behandelt: Abstand zum Mittelkreis minus Röhrenradius.</p>
+    </div>
+  </section>
+
+  <!-- A4 Erweiterung -->
+  <section aria-labelledby="a4">
+    <h2 id="a4"><span class="num">A4</span>Erweiterung: Animierter Torus (bearbeitet)
+      <span class="help">
+        <button type="button" class="help-btn" aria-label="Hilfe zu A4" aria-expanded="false">?</button>
+        <span class="help-popover" role="tooltip">
+          <h4>Drehender Torus</h4>
+          <p>Der Torus dreht sich um eine gekippte Achse in seiner Ringebene. Die Kugelbahnen sind im Torus-Koordinatensystem definiert und drehen mit.</p>
+        </span>
+      </span>
+    </h2>
+    <div class="prose">
+      <p>Der Torus dreht sich in 15 s einmal um eine Achse, die in seiner Ringebene liegt und um 25° gegen die Senkrechte gekippt ist (Achse = (sin 25°, cos 25°, 0)). Das ist keine Drehung wie bei einem Autoreifen um die Lochachse: Die Lochachse schwenkt durch den Raum, man sieht den Ring abwechselnd von der Seite und von vorn.</p>
+      <p>Die Kugeln fliegen weiterhin durch das Loch, weil ihre Bahnen im Koordinatensystem des Torus liegen. Die Modellmatrix einer Kugel ist <code>T(Mitte) * R(Achse, Winkel) * T(Position auf dem Kreis) * S(ρ)</code>, die des Torus <code>T(Mitte) * R(Achse, Winkel) * S(s)</code>. Dieselbe Drehung wirkt auf Torus und Kugelbahnen, ihre Lage zueinander bleibt exakt wie in A3 und die Abstände ändern sich durch die Drehung nicht.</p>
+      <p>Beide Bewegungen laufen über dieselbe Zeitbasis <code>t</code>, die nur bei eingeschalteter Bewegung weiterzählt. Die Normalen werden mit der Normalenmatrix (Inverse Transponierte des oberen 3x3-Blocks der Model-View-Matrix, TFM 11.10) in den Kamerarraum gebracht, die Schattierung folgt also der Drehung.</p>
+    </div>
+  </section>
+
+  <!-- A5 Material -->
+  <section aria-labelledby="a5">
+    <h2 id="a5"><span class="num">A5</span>Material &amp; Quellen</h2>
+    <div class="prose">
+      <ul>
+        <li><b>Szene:</b> nachgebaut nach dem Beispielprogramm aus der Lerneinheit TFM (Torus, vier Kugeln, Gitterebene) mit den Farben aus Übung TFM-04: Torus weiß, Kugeln cyan, magenta, blau und gelb. Torus und Kugel nach den parametrischen Formeln aus GRU (Abschnitte Kugel und Torus), Kamera mit <code>lookAt</code> und Perspektivprojektion nach KAP.</li>
+        <li><b>Anpassung:</b> Im Beispielprogramm haben die Kugeln den Radius 0,5 und der Torus das Loch mit Radius 0,2. Eine solche Kugel passt nicht hindurch. Deshalb ist der Torus mit 1,5 skaliert und die Kugeln haben Radius 0,15. Die Gitterebene liegt unter der Szene, damit auch bei gekipptem Torus nichts in sie eintaucht.</li>
+        <li><b>Rotation:</b> Drehung um eine beliebige Achse nach der Formel von Rodrigues. Hinweise zur Rotation aus der Aufgabe: w3schools.com und webglfundamentals.org (WebGL 2D Rotation).</li>
+        <li><b>Technik:</b> rohes WebGL 1, GLSL ES 1.00, eigene Matrixfunktionen (spaltenweise Speicherung, lookAt, perspective, Drehung, Normalenmatrix). Die Beleuchtung berechnet das Fragment-Programm pro Pixel aus Normale, Lichtrichtung und Blickrichtung.</li>
+        <li><b>Fremdmaterial:</b> keines. Es werden keine externen Bibliotheken, Schriften oder Bilder verwendet.</li>
+        <li><b>Quelltext:</b> die für diese Aufgabe geschriebenen Stellen sind mit <code>// START EA6_FLIEGENDE_KUGELN</code> und <code>// END EA6_FLIEGENDE_KUGELN</code> markiert.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>
+    <p>Die Seite läuft vollständig im Browser. Es werden keine Daten an einen Server gesendet und nichts gespeichert.</p>
+  </footer>
+</main>
+
+<script>
+// START EA6_FLIEGENDE_KUGELN
+
+// ---------- Szenenparameter (Torus-Koordinatensystem: Ringebene XY, Lochachse Z) ----------
+const TORUS_R = 0.5, TORUS_r = 0.3;          // Ring- und Röhrenradius wie in GRU
+const TORUS_S = 1.5;                          // Skalierung des Torus
+const KUGEL_RHO = 0.15;                       // Kugelradius
+const BAHN_A = 0.675;                         // Radius der Kreisbahnen
+const T_KUGEL = 6.0;                          // Umlaufzeit der Kugeln in s
+const T_TORUS = 15.0;                         // Umlaufzeit der Torusdrehung in s
+const MITTE = [0, 0.9, 0];                    // Mittelpunkt des Torus in der Welt
+const EBENE_Y = -0.75;                        // Höhe der Gitterebene
+const KIPP = 25 * Math.PI / 180;
+const DREHACHSE = [Math.sin(KIPP), Math.cos(KIPP), 0];  // in der Ringebene des Torus
+const FARBEN = {
+  torus: [1, 1, 1, 1],
+  kugeln: [[0, 1, 1, 1], [1, 0, 1, 1], [0, 0, 1, 1], [1, 1, 0, 1]]  // cyan, magenta, blau, gelb
+};
+
+// ---------- Bewegungskurven ----------
+function torusWinkel(t) { return 2 * Math.PI * t / T_TORUS; }
+
+// Position der Kugel k im Torus-Koordinatensystem
+function kugelLokal(k, t) {
+  const phi = Math.PI / 4 + k * Math.PI / 2;
+  const theta = 2 * Math.PI * t / T_KUGEL + k * Math.PI / 2;
+  const p = TORUS_S * TORUS_R + BAHN_A * Math.cos(theta);
+  return [p * Math.cos(phi), p * Math.sin(phi), BAHN_A * Math.sin(theta)];
+}
+
+// Drehung eines Vektors um die Achse (Einheitsvektor) nach Rodrigues
+function drehe(v, achse, w) {
+  const c = Math.cos(w), s = Math.sin(w);
+  const d = achse[0] * v[0] + achse[1] * v[1] + achse[2] * v[2];
+  const x = [achse[1] * v[2] - achse[2] * v[1], achse[2] * v[0] - achse[0] * v[2], achse[0] * v[1] - achse[1] * v[0]];
+  return [0, 1, 2].map(i => v[i] * c + x[i] * s + achse[i] * d * (1 - c));
+}
+
+// Position der Kugel k in der Welt
+function kugelWelt(k, t) {
+  const q = drehe(kugelLokal(k, t), DREHACHSE, torusWinkel(t));
+  return [q[0] + MITTE[0], q[1] + MITTE[1], q[2] + MITTE[2]];
+}
+
+// ---------- Matrizen (spaltenweise gespeichert) ----------
+const M4 = {
+  identity() { const m = new Float32Array(16); m[0] = m[5] = m[10] = m[15] = 1; return m; },
+  multiply(a, b) {
+    const o = new Float32Array(16);
+    for (let c = 0; c < 4; c++) for (let r = 0; r < 4; r++) {
+      let s = 0;
+      for (let k = 0; k < 4; k++) s += a[k * 4 + r] * b[c * 4 + k];
+      o[c * 4 + r] = s;
+    }
+    return o;
+  },
+  translation(v) { const m = M4.identity(); m[12] = v[0]; m[13] = v[1]; m[14] = v[2]; return m; },
+  scaling(s) { const m = M4.identity(); m[0] = s[0]; m[5] = s[1]; m[10] = s[2]; return m; },
+  rotation(achse, w) {
+    const c = Math.cos(w), s = Math.sin(w), t = 1 - c;
+    const x = achse[0], y = achse[1], z = achse[2];
+    const m = M4.identity();
+    m[0] = t * x * x + c;     m[4] = t * x * y - s * z; m[8]  = t * x * z + s * y;
+    m[1] = t * x * y + s * z; m[5] = t * y * y + c;     m[9]  = t * y * z - s * x;
+    m[2] = t * x * z - s * y; m[6] = t * y * z + s * x; m[10] = t * z * z + c;
+    return m;
+  },
+  perspective(fovy, aspect, near, far) {
+    const f = 1 / Math.tan(fovy / 2), m = new Float32Array(16);
+    m[0] = f / aspect; m[5] = f;
+    m[10] = (far + near) / (near - far); m[11] = -1;
+    m[14] = 2 * far * near / (near - far);
+    return m;
+  },
+  lookAt(eye, center, up) {
+    let z = [eye[0] - center[0], eye[1] - center[1], eye[2] - center[2]];
+    const lz = Math.hypot(z[0], z[1], z[2]); z = z.map(v => v / lz);
+    let x = [up[1] * z[2] - up[2] * z[1], up[2] * z[0] - up[0] * z[2], up[0] * z[1] - up[1] * z[0]];
+    const lx = Math.hypot(x[0], x[1], x[2]); x = x.map(v => v / lx);
+    const y = [z[1] * x[2] - z[2] * x[1], z[2] * x[0] - z[0] * x[2], z[0] * x[1] - z[1] * x[0]];
+    const m = M4.identity();
+    m[0] = x[0]; m[4] = x[1]; m[8]  = x[2];
+    m[1] = y[0]; m[5] = y[1]; m[9]  = y[2];
+    m[2] = z[0]; m[6] = z[1]; m[10] = z[2];
+    m[12] = -(x[0] * eye[0] + x[1] * eye[1] + x[2] * eye[2]);
+    m[13] = -(y[0] * eye[0] + y[1] * eye[1] + y[2] * eye[2]);
+    m[14] = -(z[0] * eye[0] + z[1] * eye[1] + z[2] * eye[2]);
+    return m;
+  },
+  // Normalenmatrix: Inverse Transponierte des oberen 3x3-Blocks
+  normalMatrix(m) {
+    const a = m[0], b = m[1], c = m[2], d = m[4], e = m[5], f = m[6], g = m[8], h = m[9], i = m[10];
+    const A = e * i - f * h, B = f * g - d * i, C = d * h - e * g;
+    const det = a * A + b * B + c * C;
+    const id = 1 / det;
+    // Inverse (Spalten) transponiert ergibt direkt die Kofaktoren
+    return new Float32Array([
+      A * id, B * id, C * id,
+      (c * h - b * i) * id, (a * i - c * g) * id, (b * g - a * h) * id,
+      (b * f - c * e) * id, (c * d - a * f) * id, (a * e - b * d) * id
+    ]);
+  }
+};
+
+// Torus-Modellmatrix: T(Mitte) * R(Achse, Winkel) * S(s)
+function modellTorus(t) {
+  return M4.multiply(M4.multiply(M4.translation(MITTE), M4.rotation(DREHACHSE, torusWinkel(t))), M4.scaling([TORUS_S, TORUS_S, TORUS_S]));
+}
+// Kugel-Modellmatrix: T(Mitte) * R(Achse, Winkel) * T(Position auf dem Kreis) * S(rho)
+function modellKugel(k, t) {
+  const m = M4.multiply(M4.translation(MITTE), M4.rotation(DREHACHSE, torusWinkel(t)));
+  return M4.multiply(M4.multiply(m, M4.translation(kugelLokal(k, t))), M4.scaling([KUGEL_RHO, KUGEL_RHO, KUGEL_RHO]));
+}
+
+// ---------- Geometrie ----------
+function kugelDaten(nLat, nLon) {
+  const v = [], idx = [];
+  for (let i = 0; i <= nLat; i++) {
+    const u = Math.PI * i / nLat;
+    for (let j = 0; j <= nLon; j++) {
+      const w = 2 * Math.PI * j / nLon;
+      const x = Math.sin(u) * Math.cos(w), y = Math.cos(u), z = Math.sin(u) * Math.sin(w);
+      v.push(x, y, z, x, y, z);  // Position = Normale auf der Einheitskugel
+    }
+  }
+  for (let i = 0; i < nLat; i++) for (let j = 0; j < nLon; j++) {
+    const a = i * (nLon + 1) + j, b = a + nLon + 1;
+    idx.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+  return { verts: new Float32Array(v), indices: new Uint16Array(idx) };
+}
+
+function torusDaten(nU, nV) {
+  const v = [], idx = [];
+  for (let i = 0; i <= nU; i++) {
+    const u = 2 * Math.PI * i / nU;
+    for (let j = 0; j <= nV; j++) {
+      const w = 2 * Math.PI * j / nV;
+      const cx = Math.cos(u) * Math.cos(w), cy = Math.cos(u) * Math.sin(w), cz = Math.sin(u);
+      v.push((TORUS_R + TORUS_r * Math.cos(u)) * Math.cos(w), (TORUS_R + TORUS_r * Math.cos(u)) * Math.sin(w), TORUS_r * Math.sin(u), cx, cy, cz);
+    }
+  }
+  for (let i = 0; i < nU; i++) for (let j = 0; j < nV; j++) {
+    const a = i * (nV + 1) + j, b = a + nV + 1;
+    idx.push(a, b, a + 1, a + 1, b, b + 1);
+  }
+  return { verts: new Float32Array(v), indices: new Uint16Array(idx) };
+}
+
+// Gitterebene aus Linien
+function gitterDaten(halb, schritt) {
+  const v = [];
+  for (let p = -halb; p <= halb + 1e-6; p += schritt) {
+    v.push(p, EBENE_Y, -halb, p, EBENE_Y, halb);
+    v.push(-halb, EBENE_Y, p, halb, EBENE_Y, p);
+  }
+  return new Float32Array(v);
+}
+
+// ---------- Shader ----------
+const VS_KOERPER = `
+attribute vec3 aPosition;
+attribute vec3 aNormal;
+uniform mat4 uMV;
+uniform mat4 uP;
+uniform mat3 uN;
+varying vec3 vN;
+varying vec3 vP;
+void main() {
+  vec4 pe = uMV * vec4(aPosition, 1.0);
+  vP = pe.xyz;
+  vN = uN * aNormal;
+  gl_Position = uP * pe;
+}`;
+const FS_KOERPER = `
+precision mediump float;
+uniform vec4 uColor;
+varying vec3 vN;
+varying vec3 vP;
+void main() {
+  vec3 n = normalize(vN);
+  vec3 l = normalize(vec3(-0.35, 0.65, 0.7));
+  vec3 v = normalize(-vP);
+  vec3 h = normalize(l + v);
+  float diff = max(dot(n, l), 0.0);
+  float spec = pow(max(dot(n, h), 0.0), 48.0);
+  float rim = pow(1.0 - max(dot(n, v), 0.0), 3.0);
+  vec3 c = uColor.rgb * (0.26 + 0.78 * diff) + vec3(0.35) * spec + uColor.rgb * 0.12 * rim;
+  gl_FragColor = vec4(c, 1.0);
+}`;
+const VS_LINIE = `
+attribute vec3 aPosition;
+uniform mat4 uMV;
+uniform mat4 uP;
+varying float vDist;
+void main() {
+  vec4 pe = uMV * vec4(aPosition, 1.0);
+  vDist = length(pe.xyz);
+  gl_Position = uP * pe;
+}`;
+const FS_LINIE = `
+precision mediump float;
+uniform vec4 uColor;
+uniform vec3 uBg;
+varying float vDist;
+void main() {
+  float f = smoothstep(6.0, 11.0, vDist);
+  gl_FragColor = vec4(mix(uColor.rgb, uBg, f), 1.0);
+}`;
+
+const HINTERGRUND = [0.078, 0.09, 0.11];
+
+(function () {
+  "use strict";
+
+  const statusEl = document.getElementById("globalStatus");
+  const canvas = document.getElementById("glCanvas");
+  const btnAuto = document.getElementById("btnAuto");
+  const btnAutoLabel = document.getElementById("btnAutoLabel");
+  const infoAuto = document.getElementById("infoAuto");
+  const infoTime = document.getElementById("infoTime");
+  const infoAngle = document.getElementById("infoAngle");
+
+  let laeuft = true;
+  let simZeit = 0;   // gemeinsame Zeitbasis, zählt nur bei laufender Bewegung
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = "global-status" + (kind ? " is-" + kind : "");
+  }
+
+  function fehler(text, err) {
+    if (err) console.error(text, err);
+    setStatus("Fehler: " + text, "error");
+    btnAuto.disabled = true;
+  }
+
+  // Auflösung: feste Größe im Seitenverhältnis 16:9, skaliert mit devicePixelRatio
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.round(1280 * dpr);
+  canvas.height = Math.round(720 * dpr);
+
+  const gl = canvas.getContext("webgl", { antialias: true });
+  if (!gl) { fehler("WebGL wird von diesem Browser nicht unterstützt."); return; }
+
+  function baueShader(typ, quelle) {
+    const s = gl.createShader(typ);
+    gl.shaderSource(s, quelle);
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error("Shader-Fehler: " + gl.getShaderInfoLog(s));
+    return s;
+  }
+  function baueProgramm(vs, fs, attribute, uniforms) {
+    const p = gl.createProgram();
+    gl.attachShader(p, baueShader(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, baueShader(gl.FRAGMENT_SHADER, fs));
+    attribute.forEach((name, i) => gl.bindAttribLocation(p, i, name));
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error("Link-Fehler: " + gl.getProgramInfoLog(p));
+    p.u = {};
+    uniforms.forEach(n => { p.u[n] = gl.getUniformLocation(p, n); });
+    return p;
+  }
+
+  let progK, progL, kugel, torus, gitter;
+  try {
+    progK = baueProgramm(VS_KOERPER, FS_KOERPER, ["aPosition", "aNormal"], ["uMV", "uP", "uN", "uColor"]);
+    progL = baueProgramm(VS_LINIE, FS_LINIE, ["aPosition"], ["uMV", "uP", "uColor", "uBg"]);
+  } catch (err) {
+    fehler(err.message, err);
+    return;
+  }
+
+  function ladeMesh(d) {
+    const vb = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vb);
+    gl.bufferData(gl.ARRAY_BUFFER, d.verts, gl.STATIC_DRAW);
+    const ib = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, ib);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, d.indices, gl.STATIC_DRAW);
+    return { vb, ib, count: d.indices.length };
+  }
+  kugel = ladeMesh(kugelDaten(32, 64));
+  torus = ladeMesh(torusDaten(32, 96));
+  const gd = gitterDaten(3.5, 0.5);
+  gitter = { vb: gl.createBuffer(), count: gd.length / 3 };
+  gl.bindBuffer(gl.ARRAY_BUFFER, gitter.vb);
+  gl.bufferData(gl.ARRAY_BUFFER, gd, gl.STATIC_DRAW);
+
+  // Kamera: feste Blickrichtung mit lookAt, Perspektive
+  const vMatrix = M4.lookAt([0, 2.3, 5.3], [0, 0.5, 0], [0, 1, 0]);
+  const pMatrix = M4.perspective(40 * Math.PI / 180, canvas.width / canvas.height, 0.1, 50);
+
+  function zeichneMesh(mesh, modell, farbe) {
+    const mv = M4.multiply(vMatrix, modell);
+    gl.uniformMatrix4fv(progK.u.uMV, false, mv);
+    gl.uniformMatrix3fv(progK.u.uN, false, M4.normalMatrix(mv));
+    gl.uniform4fv(progK.u.uColor, farbe);
+    gl.drawElements(gl.TRIANGLES, mesh.count, gl.UNSIGNED_SHORT, 0);
+  }
+
+  function render() {
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.clearColor(HINTERGRUND[0], HINTERGRUND[1], HINTERGRUND[2], 1);
+    gl.enable(gl.DEPTH_TEST);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Gitterebene
+    gl.useProgram(progL);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gitter.vb);
+    gl.enableVertexAttribArray(0);
+    gl.disableVertexAttribArray(1);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.uniformMatrix4fv(progL.u.uMV, false, vMatrix);
+    gl.uniformMatrix4fv(progL.u.uP, false, pMatrix);
+    gl.uniform4fv(progL.u.uColor, [0.5, 0.56, 0.64, 1]);
+    gl.uniform3fv(progL.u.uBg, HINTERGRUND);
+    gl.drawArrays(gl.LINES, 0, gitter.count);
+
+    // Torus und Kugeln
+    gl.useProgram(progK);
+    gl.uniformMatrix4fv(progK.u.uP, false, pMatrix);
+    gl.enableVertexAttribArray(0);
+    gl.enableVertexAttribArray(1);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, torus.vb);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, torus.ib);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+    zeichneMesh(torus, modellTorus(simZeit), FARBEN.torus);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, kugel.vb);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, kugel.ib);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+    for (let k = 0; k < 4; k++) zeichneMesh(kugel, modellKugel(k, simZeit), FARBEN.kugeln[k]);
+  }
+
+  function updateInfo() {
+    infoAuto.textContent = laeuft ? "läuft" : "angehalten";
+    infoTime.textContent = simZeit.toFixed(1) + " s";
+    const grad = (torusWinkel(simZeit) * 180 / Math.PI) % 360;
+    infoAngle.textContent = Math.round(grad) + "°";
+    btnAutoLabel.textContent = laeuft ? "Bewegung anhalten" : "Bewegung starten";
+  }
+
+  function setLaeuft(an) {
+    laeuft = an;
+    setStatus(an ? "Bewegung läuft. Mit k oder dem Button anhalten." : "Bewegung angehalten. Mit k oder dem Button weiterlaufen lassen.", "ready");
+    updateInfo();
+  }
+
+  // Animationsschleife: zeitbasiert, Zeitdifferenz begrenzt
+  let letzte = performance.now();
+  function loop(jetzt) {
+    const dt = Math.min((jetzt - letzte) / 1000, 0.1);
+    letzte = jetzt;
+    if (laeuft) {
+      simZeit += dt;
+      updateInfo();
+    }
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  // Interaktion: Button und Taste k (ein Tastendruck = ein Umschalten, kein Auto-Repeat)
+  btnAuto.addEventListener("click", function () { setLaeuft(!laeuft); });
+  window.addEventListener("keydown", function (evt) {
+    if (evt.ctrlKey || evt.metaKey || evt.altKey || evt.repeat || btnAuto.disabled) return;
+    if ((evt.key || "").toLowerCase() === "k") {
+      btnAuto.classList.add("is-pressed");
+      setTimeout(function () { btnAuto.classList.remove("is-pressed"); }, 120);
+      setLaeuft(!laeuft);
+    }
+  });
+
+  // Start
+  btnAuto.disabled = false;
+  updateInfo();
+  setStatus("Bereit. Die Bewegung läuft, mit k oder dem Button lässt sie sich anhalten.", "ready");
+  render();
+  requestAnimationFrame(function (now) { letzte = now; loop(now); });
+})();
+// END EA6_FLIEGENDE_KUGELN
+
+// Hilfe-Popover
+document.querySelectorAll(".help").forEach(help => {
+  const btn = help.querySelector(".help-btn");
+  btn.addEventListener("click", e => {
+    e.stopPropagation();
+    document.querySelectorAll(".help.is-open").forEach(h => { if (h !== help) { h.classList.remove("is-open"); h.querySelector(".help-btn").setAttribute("aria-expanded", "false"); } });
+    const open = help.classList.toggle("is-open");
+    btn.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+});
+document.addEventListener("click", e => { if (!e.target.closest(".help")) document.querySelectorAll(".help.is-open").forEach(h => { h.classList.remove("is-open"); h.querySelector(".help-btn").setAttribute("aria-expanded", "false"); }); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") document.querySelectorAll(".help.is-open").forEach(h => { h.classList.remove("is-open"); h.querySelector(".help-btn").setAttribute("aria-expanded", "false"); }); });
+</script>
+</body>
+</html>
